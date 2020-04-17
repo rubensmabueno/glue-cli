@@ -3,6 +3,8 @@
 import argparse
 import boto3
 
+# PARTITION
+
 def copy_partition(original_table, destination_table):
     original_database = ""
     destination_database = ""
@@ -25,6 +27,8 @@ def copy_partition(original_table, destination_table):
     for i in range(0, len(partitions_input), 100):
         batch_partitions_input = partitions_input[i:i+100]
         client.batch_create_partition(DatabaseName=destination_database, TableName=destination_table_name, PartitionInputList=batch_partitions_input)
+
+# TABLE
 
 def copy_table(original_table, destination_table):
     original_database = ""
@@ -69,6 +73,12 @@ def list_tables(original_database):
     for table in response["TableList"]:
         print(table['Name'])
 
+# DATABASE
+
+def create_database(database):
+    client = boto3.client("glue")
+    client.create_database(DatabaseInput={ "Name": database })
+
 if __name__ == '__main__':
     main_parser = argparse.ArgumentParser(description='Helper to AWS Glue')
     
@@ -100,6 +110,15 @@ if __name__ == '__main__':
     partition_action_copy_parser.add_argument('table')
     partition_action_copy_parser.add_argument('destination_table')
 
+    # DATABASE ACTIONS
+    database_parser = service_subparsers.add_parser("database", help="Service")
+
+    database_action_subparser = database_parser.add_subparsers(title="action", dest="action_command")
+    database_action_subparser.required = True
+
+    database_action_copy_parser = database_action_subparser.add_parser("create", help="Action")
+    database_action_copy_parser.add_argument('database')
+
     args = main_parser.parse_args()
 
     if(args.service_command == 'table'):
@@ -112,3 +131,6 @@ if __name__ == '__main__':
     elif(args.service_command == 'partition'):
         if(args.action_command == 'cp'):
             copy_partition(args.table, args.destination_table)
+    elif(args.service_command == 'database'):
+        if(args.action_command == 'create'):
+            create_database(args.database)
